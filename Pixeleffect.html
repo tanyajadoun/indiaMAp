@@ -1,0 +1,106 @@
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>pixel effect</title>
+    <link rel="stylesheet" href="style.css">
+
+</head>
+<style>* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    background-color: black;
+}
+
+#my-canvas {
+    border: 1px soild white;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -15%);
+}</style>
+<body>
+    <canvas id="my-canvas"></canvas>
+    <script src="pixel.js"></script>
+
+</body>
+<script>
+const canvas = document.getElementById('my-canvas');
+const ctx = canvas.getContext('2d');
+
+const img = new Image();
+img.crossOrigin = "anonymous";
+img.src = 'https://images.unsplash.com/photo-1534314896047-f27062494411?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=695&q=80'
+
+let brightnessArray = [];
+let particlesArray = [];
+let rgbArray = []; //RGB
+
+class Particle {
+    constructor() {
+        this.x = Math.random() * canvas.width;
+        this.y = 0;
+        this.brightness = 0;
+        this.velocity = Math.random() * 3 + 0.2;
+        this.radius = Math.random() * 1.5 + 1;
+    }
+
+    update() {
+        this.y += this.velocity;
+        if (this.y >= canvas.height) {
+            this.y = 0;
+            this.x = Math.random() * canvas.width;
+        }
+        this.brightness = brightnessArray[Math.floor(this.y - 1) * canvas.width + Math.floor(this.x)];
+    }
+
+    draw() {
+        ctx.beginPath();
+        //ctx.fillStyle = 'white'
+        ctx.fillStyle = rgbArray[Math.floor(this.y - 1) * canvas.width + Math.floor(this.x)];
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+
+}
+
+img.onload = function () {
+    canvas.width = img.width;
+    canvas.height = img.height
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);// deleting the image after its drawn and er have the data
+    console.log(imgData.data);// rgba red green blue alpha 0-255
+
+    for (let i = 0; i < imgData.data.length; i++) {
+        const red = imgData.data[i * 4];
+        const green = imgData.data[(i * 4) + 1];
+        const blue = imgData.data[(i * 4) + 2];
+        const brightness = (red + green + blue) / 3;
+        brightnessArray.push(brightness);
+        rgbArray.push(`rgb(${red}, ${green}, ${blue})`);// RGB
+    }
+
+    //generate 10.000 particles
+    for (let i = 0; i < 10000; i++) {
+        particlesArray.push(new Particle());
+    }
+
+    const animate = () => {
+        ctx.globalAlpha = 0.05;
+        ctx.fillStyle = 'black';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        particlesArray.forEach(particle => {
+            particle.update();
+            ctx.globalAlpha = particle.brightness * 0.001;
+            particle.draw();
+        });
+        requestAnimationFrame(animate);
+    }
+    animate();
+};
+</script>
+</html>
